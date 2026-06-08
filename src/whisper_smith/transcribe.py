@@ -10,6 +10,8 @@ from whisper_smith.models import TranscriptResult, TranscriptSegment
 
 MAX_SINGLE_UPLOAD_BYTES = 24 * 1024 * 1024
 CHUNK_SECONDS = 60
+DEFAULT_TRANSCRIPTION_MODEL = "gpt-4o-transcribe"
+TIMESTAMPED_TRANSCRIPTION_MODEL = "whisper-1"
 
 
 class OpenAITranscriptionResponse(Protocol):
@@ -82,6 +84,22 @@ def _transcribe_single_file(
             raise
 
     return from_openai_response(response)
+
+
+def _supports_timestamped_segments(model: str) -> bool:
+    return model == TIMESTAMPED_TRANSCRIPTION_MODEL
+
+
+def _resolve_transcription_model(
+    model: str,
+    *,
+    require_timestamps: bool,
+    timestamp_model: str,
+) -> str:
+    if require_timestamps and not _supports_timestamped_segments(model):
+        return timestamp_model
+
+    return model
 
 
 def _split_audio_into_chunks(path: Path, output_dir: Path) -> list[Path]:
@@ -255,7 +273,9 @@ def transcribe_audio(
     audio_path: str | Path,
     *,
     client: OpenAI | None = None,
-    model: str = "gpt-4o-transcribe",
+    model: str = DEFAULT_TRANSCRIPTION_MODEL,
+    require_timestamps: bool = True,
+    timestamp_model: str = TIMESTAMPED_TRANSCRIPTION_MODEL,
 ) -> TranscriptResult:
     path = Path(audio_path)
 
@@ -263,15 +283,20 @@ def transcribe_audio(
         raise FileNotFoundError(f"Audio file not found: {path}")
 
     openai_client = client or OpenAI()
+    resolved_model = _resolve_transcription_model(
+        model,
+        require_timestamps=require_timestamps,
+        timestamp_model=timestamp_model,
+    )
 
     if path.stat().st_size > MAX_SINGLE_UPLOAD_BYTES:
-        return _transcribe_in_chunks(path, openai_client, model)
+        return _transcribe_in_chunks(path, openai_client, resolved_model)
 
     try:
-        return _transcribe_single_file(path, openai_client, model)
+        return _transcribe_single_file(path, openai_client, resolved_model)
     except BadRequestError as error:
         if _is_probably_oversize_or_container_error(error):
-            return _transcribe_in_chunks(path, openai_client, model)
+            return _transcribe_in_chunks(path, openai_client, resolved_model)
         raise
 
 
@@ -279,6 +304,14 @@ def transcribe_file(
     audio_path: str | Path,
     *,
     client: OpenAI | None = None,
-    model: str = "gpt-4o-transcribe",
+    model: str = DEFAULT_TRANSCRIPTION_MODEL,
+    require_timestamps: bool = True,
+    timestamp_model: str = TIMESTAMPED_TRANSCRIPTION_MODEL,
 ) -> TranscriptResult:
-    return transcribe_audio(audio_path, client=client, model=model)
+    return transcribe_audio(
+        audio_path,
+        client=client,
+        model=model,
+        require_timestamps=require_timestamps,
+        timestamp_model=timestamp_model,
+    )

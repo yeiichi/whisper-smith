@@ -80,6 +80,56 @@ def test_transcribe_audio_uses_chunking_for_large_files(
     assert result.text == "chunked transcript"
 
 
+def test_transcribe_audio_uses_timestamp_model_by_default(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audio_path = tmp_path / "small.m4a"
+    audio_path.write_bytes(b"dummy audio")
+    calls = []
+
+    def fake_single_file(path, openai_client, model):
+        calls.append((path, openai_client, model))
+        return TranscriptResult(
+            segments=[
+                SimpleNamespace(start=0.5, end=1.5, text="timestamped", speaker=None)
+            ],
+            text="timestamped",
+        )
+
+    monkeypatch.setattr("whisper_smith.transcribe._transcribe_single_file", fake_single_file)
+    monkeypatch.setattr("whisper_smith.transcribe.OpenAI", lambda: object())
+
+    result = transcribe_audio(audio_path)
+
+    assert result.text == "timestamped"
+    assert calls[0][2] == "whisper-1"
+
+
+def test_transcribe_audio_can_opt_out_of_timestamp_model(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audio_path = tmp_path / "small.m4a"
+    audio_path.write_bytes(b"dummy audio")
+    calls = []
+
+    def fake_single_file(path, openai_client, model):
+        calls.append((path, openai_client, model))
+        return TranscriptResult(
+            segments=[SimpleNamespace(start=0.0, end=0.0, text="plain", speaker=None)],
+            text="plain",
+        )
+
+    monkeypatch.setattr("whisper_smith.transcribe._transcribe_single_file", fake_single_file)
+    monkeypatch.setattr("whisper_smith.transcribe.OpenAI", lambda: object())
+
+    result = transcribe_audio(audio_path, require_timestamps=False)
+
+    assert result.text == "plain"
+    assert calls[0][2] == "gpt-4o-transcribe"
+
+
 def test_transcribe_audio_falls_back_to_chunking_on_bad_request(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,

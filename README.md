@@ -105,6 +105,40 @@ whisper-smith data/sample.m4a --output data/sample.srt
 whisper-smith data/sample.m4a --output data/sample.txt --overwrite
 ```
 
+### 6) Run speaker diarization
+
+```bash
+whisper-smith data/sample.m4a --diarize --output data/sample.diarization.json
+```
+
+Diarization currently supports JSON output only. Optional speaker hints:
+
+```bash
+whisper-smith data/sample.m4a --diarize --format json --num-speakers 2
+```
+
+### 7) Create speaker-aligned transcript JSON
+
+Run the full pipeline from one audio file:
+
+```bash
+whisper-smith data/sample.m4a --align --output data/sample.aligned.json
+```
+
+This writes the main aligned transcript JSON to `data/sample.aligned.json` and
+also writes intermediate artifacts beside it:
+
+```text
+data/sample.transcript.json
+data/sample.diarization.json
+```
+
+To put the intermediate artifacts in a separate directory:
+
+```bash
+whisper-smith data/sample.m4a --align --output data/sample.aligned.json --artifacts-dir data/artifacts
+```
+
 ## Python Usage
 
 ```python
@@ -134,11 +168,17 @@ for segment in result.segments:
 `diarize_audio` uses `HUGGINGFACE_TOKEN` from the environment, or accepts
 `hf_token="..."` explicitly.
 
+The default local model is `pyannote/speaker-diarization-3.1`, which is compatible
+with the Intel macOS dependency set. You may pass a different model explicitly
+from Python when running on a newer platform.
+
 ## Notes
 
 - If `--output` is omitted, transcript is printed to stdout.
 - If `--format` is omitted, format is inferred from `--output` extension when possible.
 - If an output file already exists, add `--overwrite` to replace it.
+- Transcription uses a timestamp-capable OpenAI model by default so JSON, SRT,
+  and VTT outputs have segment timestamps.
 - For large audio files, `whisper-smith` automatically splits audio into chunks and
   merges transcript text.
 

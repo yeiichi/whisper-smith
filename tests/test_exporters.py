@@ -1,11 +1,18 @@
 from whisper_smith.exporters import (
+    export_diarization,
+    export_diarization_json,
     export_json,
     export_md,
     export_srt,
     export_txt,
     export_vtt,
 )
-from whisper_smith.models import TranscriptResult, TranscriptSegment
+from whisper_smith.models import (
+    DiarizationResult,
+    DiarizationSegment,
+    TranscriptResult,
+    TranscriptSegment,
+)
 
 
 def make_result() -> TranscriptResult:
@@ -98,3 +105,28 @@ def test_export_md() -> None:
         "\n"
         "This is a test.\n"
     )
+
+
+def test_export_diarization_json() -> None:
+    result = DiarizationResult(
+        segments=[
+            DiarizationSegment(start=0.0, end=1.5, speaker="SPEAKER_00"),
+        ]
+    )
+
+    output = export_diarization_json(result)
+
+    assert '"speaker": "SPEAKER_00"' in output
+    assert '"start": 0.0' in output
+    assert '"end": 1.5' in output
+
+
+def test_export_diarization_rejects_non_json() -> None:
+    result = DiarizationResult(segments=[])
+
+    try:
+        export_diarization(result, "txt")
+    except ValueError as error:
+        assert "Supported formats: json" in str(error)
+    else:
+        raise AssertionError("Expected ValueError for unsupported diarization format")

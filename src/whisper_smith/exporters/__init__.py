@@ -1,7 +1,11 @@
 import json
 from dataclasses import asdict
 
-from whisper_smith.models import TranscriptResult, TranscriptSegment
+from whisper_smith.models import (
+    DiarizationResult,
+    TranscriptResult,
+    TranscriptSegment,
+)
 
 SUPPORTED_FORMATS = ("txt", "md", "json", "srt", "vtt")
 SUPPORTED_TIMESTAMP_FORMATS = ("seconds", "hms")
@@ -32,6 +36,29 @@ def export_json(transcript: TranscriptResult, timestamp_format: str = "seconds")
         ensure_ascii=False,
         indent=2,
     ) + "\n"
+
+
+def export_diarization_json(diarization: DiarizationResult) -> str:
+    return json.dumps(
+        asdict(diarization),
+        ensure_ascii=False,
+        indent=2,
+    ) + "\n"
+
+
+def export_diarization(
+    diarization: DiarizationResult,
+    output_format: str,
+) -> str:
+    normalized_format = output_format.lower().lstrip(".")
+
+    if normalized_format == "json":
+        return export_diarization_json(diarization)
+
+    raise ValueError(
+        f"Unsupported diarization output format: {output_format!r}. "
+        "Supported formats: json"
+    )
 
 
 def export_srt(transcript: TranscriptResult) -> str:

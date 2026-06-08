@@ -1,10 +1,13 @@
 import os
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Protocol
 
 from whisper_smith.models import DiarizationResult, DiarizationSegment
 
-DEFAULT_DIARIZATION_MODEL = "pyannote/speaker-diarization-community-1"
+DEFAULT_DIARIZATION_MODEL = "pyannote/speaker-diarization-3.1"
 
 
 class PyannotePipeline(Protocol):
@@ -22,6 +25,43 @@ def _load_pyannote_pipeline_class() -> Any:
         ) from error
 
     return Pipeline
+
+
+def _resolve_ffmpeg_executable() -> str:
+    ffmpeg_path = shutil.which("ffmpeg")
+    if ffmpeg_path:
+        return ffmpeg_path
+
+    try:
+        import imageio_ffmpeg
+    except ImportError as error:
+        raise RuntimeError(
+            "Speaker diarization requires ffmpeg for media conversion. "
+            "Install system ffmpeg or add the 'imageio-ffmpeg' package."
+        ) from error
+
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def _convert_audio_for_diarization(path: Path, output_dir: Path) -> Path:
+    wav_path = output_dir / f"{path.stem}.diarization.wav"
+    command = [
+        _resolve_ffmpeg_executable(),
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        str(path),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        "-y",
+        str(wav_path),
+    ]
+    subprocess.run(command, check=True)
+    return wav_path
 
 
 def _resolve_hf_token(hf_token: str | None) -> str | None:
@@ -80,7 +120,22 @@ def diarize_audio(
             )
 
         Pipeline = _load_pyannote_pipeline_class()
-        diarization_pipeline = Pipeline.from_pretrained(model, token=token)
+        try:
+            diarization_pipeline = Pipeline.from_pretrained(model, token=token)
+        except TypeError as error:
+            if "token" not in str(error):
+                raise
+            diarization_pipeline = Pipeline.from_pretrained(
+                model,
+                use_auth_token=token,
+            )
+
+        if diarization_pipeline is None:
+            raise RuntimeError(
+                f"Could not load pyannote diarization model: {model}. "
+                "Check that HUGGINGFACE_TOKEN is valid and that you accepted the "
+                "model's Hugging Face user conditions."
+            )
 
     pipeline_kwargs: dict[str, int] = {}
     if num_speakers is not None:
@@ -90,8 +145,15 @@ def diarize_audio(
     if max_speakers is not None:
         pipeline_kwargs["max_speakers"] = max_speakers
 
-    output = diarization_pipeline(str(path), **pipeline_kwargs)
-    return from_pyannote_output(output)
+    try:
+        with tempfile.TemporaryDirectory(prefix="whisper_smith_diarize_") as temp_dir:
+            diarization_path = _convert_audio_for_diarization(path, Path(temp_dir))
+            output = diarization_pipeline(str(diarization_path), **pipeline_kwargs)
+            return from_pyannote_output(output)
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(
+            "Failed to prepare audio for speaker diarization. The file may be malformed."
+        ) from error
 
 
 def diarize_file(

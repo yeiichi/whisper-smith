@@ -5,7 +5,14 @@ from collections.abc import Sequence
 
 from dotenv import load_dotenv
 
-from whisper_smith.exporters import export_transcript
+from whisper_smith.align import assign_speakers
+from whisper_smith.diarize import diarize_audio
+from whisper_smith.exporters import (
+    export_diarization,
+    export_diarization_json,
+    export_json,
+    export_transcript,
+)
 from whisper_smith.transcribe import transcribe_audio
 
 
@@ -57,6 +64,48 @@ def build_parser() -> argparse.ArgumentParser:
             "'seconds' (default) or 'hms' (HH:MM:SS). "
             "Ignored for txt/srt/vtt."
         ),
+    )
+    parser.add_argument(
+        "--diarize",
+        action="store_true",
+        help="Run speaker diarization instead of transcription. Only JSON output is supported.",
+    )
+    parser.add_argument(
+        "--align",
+        action="store_true",
+        help=(
+            "Run transcription and diarization, then write speaker-aligned JSON. "
+            "Intermediate transcript and diarization JSON files are written by default "
+            "when --output is used."
+        ),
+    )
+    parser.add_argument(
+        "--artifacts-dir",
+        type=Path,
+        help=(
+            "Directory for --align intermediate transcript and diarization JSON files. "
+            "Defaults to the aligned output file directory."
+        ),
+    )
+    parser.add_argument(
+        "--no-artifacts",
+        action="store_true",
+        help="Do not write intermediate JSON files when using --align.",
+    )
+    parser.add_argument(
+        "--num-speakers",
+        type=int,
+        help="Exact number of speakers to use for diarization.",
+    )
+    parser.add_argument(
+        "--min-speakers",
+        type=int,
+        help="Minimum number of speakers to use for diarization.",
+    )
+    parser.add_argument(
+        "--max-speakers",
+        type=int,
+        help="Maximum number of speakers to use for diarization.",
     )
     return parser
 
@@ -113,6 +162,92 @@ def ensure_output_path_is_writable(output_path: Path, overwrite: bool) -> None:
         )
 
 
+def resolve_alignment_artifact_paths(
+    audio_path: Path,
+    aligned_output_path: Path,
+    artifacts_dir: Path | None,
+) -> tuple[Path, Path]:
+    artifact_parent = (
+        artifacts_dir if artifacts_dir is not None else aligned_output_path.parent
+    )
+    return (
+        artifact_parent / f"{audio_path.stem}.transcript.json",
+        artifact_parent / f"{audio_path.stem}.diarization.json",
+    )
+
+
+def validate_mode_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
+    speaker_options = (args.num_speakers, args.min_speakers, args.max_speakers)
+    if args.diarize and args.align:
+        parser.error("--diarize cannot be combined with --align.")
+
+    if not (args.diarize or args.align) and any(
+        option is not None for option in speaker_options
+    ):
+        parser.error("Speaker-count options require --diarize or --align.")
+
+    if args.artifacts_dir is not None and not args.align:
+        parser.error("--artifacts-dir requires --align.")
+
+    if args.artifacts_dir is not None and args.output is None:
+        parser.error("--artifacts-dir requires --output.")
+
+    if args.no_artifacts and not args.align:
+        parser.error("--no-artifacts requires --align.")
+
+    if not (args.diarize or args.align):
+        return
+
+    if args.num_speakers is not None and (
+        args.min_speakers is not None or args.max_speakers is not None
+    ):
+        parser.error(
+            "--num-speakers cannot be combined with --min-speakers or --max-speakers"
+        )
+
+    if (
+        args.min_speakers is not None
+        and args.max_speakers is not None
+        and args.min_speakers > args.max_speakers
+    ):
+        parser.error("--min-speakers cannot be greater than --max-speakers")
+
+
+def run_diarization(args: argparse.Namespace, output_format: str) -> str:
+    diarization = diarize_audio(
+        args.audio_path,
+        num_speakers=args.num_speakers,
+        min_speakers=args.min_speakers,
+        max_speakers=args.max_speakers,
+    )
+    return export_diarization(diarization, output_format)
+
+
+def run_transcription(args: argparse.Namespace, output_format: str) -> str:
+    transcript = transcribe_audio(args.audio_path)
+    return export_transcript(
+        transcript,
+        output_format,
+        timestamp_format=args.timestamp_format,
+    )
+
+
+def run_alignment(args: argparse.Namespace) -> tuple[str, str, str]:
+    transcript = transcribe_audio(args.audio_path)
+    diarization = diarize_audio(
+        args.audio_path,
+        num_speakers=args.num_speakers,
+        min_speakers=args.min_speakers,
+        max_speakers=args.max_speakers,
+    )
+    aligned = assign_speakers(transcript, diarization)
+    return (
+        export_json(aligned, timestamp_format=args.timestamp_format),
+        export_json(transcript, timestamp_format=args.timestamp_format),
+        export_diarization_json(diarization),
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     load_dotenv()
 
@@ -122,38 +257,75 @@ def main(argv: Sequence[str] | None = None) -> None:
     if not args.audio_path.is_file():
         parser.error(f"Audio file not found: {args.audio_path}")
 
+    raw_output_arg = extract_raw_output_arg(argv)
     output_format = infer_output_format(args.output, args.format)
-    if args.output is None:
-        transcript = transcribe_audio(args.audio_path)
-        rendered_transcript = export_transcript(
-            transcript,
-            output_format,
-            timestamp_format=args.timestamp_format,
+    validate_mode_args(args, parser)
+    if args.diarize or args.align:
+        output_is_directory_hint = args.output is not None and (
+            args.output.is_dir()
+            or (raw_output_arg is not None and raw_output_arg.endswith("/"))
         )
-        print(rendered_transcript, end="")
+        if args.format is None and (args.output is None or output_is_directory_hint):
+            output_format = "json"
+        if output_format != "json":
+            if args.align:
+                parser.error("Aligned transcript output currently supports only JSON.")
+            parser.error("Diarization output currently supports only JSON.")
+
+    if args.output is None:
+        if args.align:
+            rendered_output, _transcript_json, _diarization_json = run_alignment(args)
+        else:
+            rendered_output = (
+                run_diarization(args, output_format)
+                if args.diarize
+                else run_transcription(args, output_format)
+            )
+        print(rendered_output, end="")
         return
 
     resolved_output = resolve_output_path(
         audio_path=args.audio_path,
         output_path=args.output,
-        output_format=output_format,
-        raw_output_arg=extract_raw_output_arg(argv),
+        output_format="aligned.json" if args.align else output_format,
+        raw_output_arg=raw_output_arg,
     )
 
     try:
         ensure_output_path_is_writable(resolved_output, args.overwrite)
+        if args.align and not args.no_artifacts:
+            transcript_output, diarization_output = resolve_alignment_artifact_paths(
+                args.audio_path,
+                resolved_output,
+                args.artifacts_dir,
+            )
+            ensure_output_path_is_writable(transcript_output, args.overwrite)
+            ensure_output_path_is_writable(diarization_output, args.overwrite)
     except FileExistsError as error:
         parser.error(str(error))
 
-    transcript = transcribe_audio(args.audio_path)
-    rendered_transcript = export_transcript(
-        transcript,
-        output_format,
-        timestamp_format=args.timestamp_format,
-    )
+    if args.align:
+        rendered_output, transcript_json, diarization_json = run_alignment(args)
+    else:
+        rendered_output = (
+            run_diarization(args, output_format)
+            if args.diarize
+            else run_transcription(args, output_format)
+        )
 
     resolved_output.parent.mkdir(parents=True, exist_ok=True)
-    resolved_output.write_text(rendered_transcript, encoding="utf-8")
+    resolved_output.write_text(rendered_output, encoding="utf-8")
+
+    if args.align and not args.no_artifacts:
+        transcript_output, diarization_output = resolve_alignment_artifact_paths(
+            args.audio_path,
+            resolved_output,
+            args.artifacts_dir,
+        )
+        transcript_output.parent.mkdir(parents=True, exist_ok=True)
+        transcript_output.write_text(transcript_json, encoding="utf-8")
+        diarization_output.parent.mkdir(parents=True, exist_ok=True)
+        diarization_output.write_text(diarization_json, encoding="utf-8")
 
 
 if __name__ == "__main__":

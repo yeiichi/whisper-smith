@@ -77,6 +77,8 @@ def test_diarize_audio_requires_token_without_pipeline(
 def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:
     audio_path = tmp_path / "audio.wav"
     audio_path.write_bytes(b"dummy audio")
+    converted_path = tmp_path / "converted.wav"
+    converted_path.write_bytes(b"converted audio")
     calls = []
 
     def fake_pipeline(path, **kwargs):
@@ -91,17 +93,24 @@ def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:
             ]
         )
 
-    result = diarize_audio(
-        audio_path,
-        num_speakers=2,
-        min_speakers=1,
-        max_speakers=3,
-        pipeline=fake_pipeline,
-    )
+    from whisper_smith import diarize
+
+    original_convert = diarize._convert_audio_for_diarization
+    diarize._convert_audio_for_diarization = lambda *_args: converted_path
+    try:
+        result = diarize_audio(
+            audio_path,
+            num_speakers=2,
+            min_speakers=1,
+            max_speakers=3,
+            pipeline=fake_pipeline,
+        )
+    finally:
+        diarize._convert_audio_for_diarization = original_convert
 
     assert calls == [
         (
-            str(audio_path),
+            str(converted_path),
             {
                 "num_speakers": 2,
                 "min_speakers": 1,
@@ -118,6 +127,8 @@ def test_diarize_audio_loads_pyannote_pipeline_with_env_token(
 ) -> None:
     audio_path = tmp_path / "audio.wav"
     audio_path.write_bytes(b"dummy audio")
+    converted_path = tmp_path / "converted.wav"
+    converted_path.write_bytes(b"converted audio")
     monkeypatch.setenv("HUGGINGFACE_TOKEN", "hf_test")
     calls = []
 
@@ -143,8 +154,104 @@ def test_diarize_audio_loads_pyannote_pipeline_with_env_token(
         "whisper_smith.diarize._load_pyannote_pipeline_class",
         lambda: FakePipeline,
     )
+    monkeypatch.setattr(
+        "whisper_smith.diarize._convert_audio_for_diarization",
+        lambda *_args: converted_path,
+    )
 
     result = diarize_audio(audio_path)
 
     assert calls == [(DEFAULT_DIARIZATION_MODEL, "hf_test")]
     assert result.segments[0].speaker == "SPEAKER_00"
+
+
+def test_diarize_audio_supports_pyannote_use_auth_token_keyword(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audio_path = tmp_path / "audio.wav"
+    audio_path.write_bytes(b"dummy audio")
+    converted_path = tmp_path / "converted.wav"
+    converted_path.write_bytes(b"converted audio")
+    monkeypatch.setenv("HUGGINGFACE_TOKEN", "hf_test")
+    calls = []
+
+    class FakePipeline:
+        @staticmethod
+        def from_pretrained(model, **kwargs):
+            calls.append((model, kwargs))
+            if "token" in kwargs:
+                raise TypeError("got an unexpected keyword argument 'token'")
+
+            def fake_pipeline(path, **pipeline_kwargs):
+                return FakeAnnotation(
+                    [
+                        (
+                            SimpleNamespace(start=0.0, end=1.0),
+                            "track",
+                            "SPEAKER_00",
+                        )
+                    ]
+                )
+
+            return fake_pipeline
+
+    monkeypatch.setattr(
+        "whisper_smith.diarize._load_pyannote_pipeline_class",
+        lambda: FakePipeline,
+    )
+    monkeypatch.setattr(
+        "whisper_smith.diarize._convert_audio_for_diarization",
+        lambda *_args: converted_path,
+    )
+
+    result = diarize_audio(audio_path)
+
+    assert calls == [
+        (DEFAULT_DIARIZATION_MODEL, {"token": "hf_test"}),
+        (DEFAULT_DIARIZATION_MODEL, {"use_auth_token": "hf_test"}),
+    ]
+    assert result.segments[0].speaker == "SPEAKER_00"
+
+
+def test_diarize_audio_raises_when_pyannote_returns_no_pipeline(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audio_path = tmp_path / "audio.wav"
+    audio_path.write_bytes(b"dummy audio")
+    monkeypatch.setenv("HUGGINGFACE_TOKEN", "hf_test")
+
+    class FakePipeline:
+        @staticmethod
+        def from_pretrained(*_args, **_kwargs):
+            return None
+
+    monkeypatch.setattr(
+        "whisper_smith.diarize._load_pyannote_pipeline_class",
+        lambda: FakePipeline,
+    )
+
+    with pytest.raises(RuntimeError, match="Could not load pyannote diarization model"):
+        diarize_audio(audio_path)
+
+
+def test_diarize_audio_raises_when_audio_conversion_fails(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audio_path = tmp_path / "audio.mp4"
+    audio_path.write_bytes(b"dummy audio")
+
+    def fail_conversion(*_args):
+        raise subprocess.CalledProcessError(1, ["ffmpeg"])
+
+    import subprocess
+
+    monkeypatch.setattr(
+        "whisper_smith.diarize._convert_audio_for_diarization",
+        fail_conversion,
+    )
+
+    with pytest.raises(RuntimeError, match="Failed to prepare audio"):
+        diarize_audio(audio_path, pipeline=lambda *_args, **_kwargs: None)
