@@ -16,6 +16,8 @@ diarize = [
     "huggingface-hub<1",
     "numpy<2",
     "pyannote.audio",
+    "torch<2.9",
+    "torchaudio<2.9",
 ]
 
 [project.scripts]

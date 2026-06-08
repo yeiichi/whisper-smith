@@ -181,6 +181,9 @@ from Python when running on a newer platform.
   and VTT outputs have segment timestamps.
 - For large audio files, `whisper-smith` automatically splits audio into chunks and
   merges transcript text.
+- If diarization fails with `torchaudio` missing `AudioMetaData`, refresh the
+  optional diarization dependencies with `uv lock --upgrade-package torch
+  --upgrade-package torchaudio` and then `uv sync --extra diarize`.
 
 ## Development
 

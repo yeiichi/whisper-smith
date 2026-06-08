@@ -23,6 +23,15 @@ def _load_pyannote_pipeline_class() -> Any:
             "Install it with 'uv sync --extra diarize' or "
             "'pip install whisper-smith[diarize]'."
         ) from error
+    except AttributeError as error:
+        if "AudioMetaData" not in str(error):
+            raise
+        raise RuntimeError(
+            "Speaker diarization dependency versions are incompatible: "
+            "pyannote.audio expects a torchaudio version with AudioMetaData. "
+            "Run 'uv lock --upgrade-package torch --upgrade-package torchaudio' "
+            "and then 'uv sync --extra diarize'."
+        ) from error
 
     return Pipeline
 

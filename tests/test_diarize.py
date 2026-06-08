@@ -1,9 +1,11 @@
+import builtins
 from types import SimpleNamespace
 
 import pytest
 
 from whisper_smith.diarize import (
     DEFAULT_DIARIZATION_MODEL,
+    _load_pyannote_pipeline_class,
     diarize_audio,
     from_pyannote_output,
 )
@@ -72,6 +74,22 @@ def test_diarize_audio_requires_token_without_pipeline(
 
     with pytest.raises(RuntimeError, match="Hugging Face token not found"):
         diarize_audio(audio_path)
+
+
+def test_load_pyannote_pipeline_reports_incompatible_torchaudio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "pyannote.audio":
+            raise AttributeError("module 'torchaudio' has no attribute 'AudioMetaData'")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    with pytest.raises(RuntimeError, match="dependency versions are incompatible"):
+        _load_pyannote_pipeline_class()
 
 
 def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:
