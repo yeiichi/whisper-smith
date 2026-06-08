@@ -4,14 +4,46 @@ version = "0.1.0"
 description = "A small Python transcription helper using OpenAI speech-to-text APIs."
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    { name = "Eiichi YAMAMOTO", email = "info@yeiichi.com" },
+]
+license = "MIT"
+keywords = [
+    "audio",
+    "diarization",
+    "openai",
+    "speech-to-text",
+    "transcription",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Utilities",
+]
 dependencies = [
     "imageio-ffmpeg",
     "openai",
-    "pytest>=9.0.3",
     "python-dotenv",
 ]
 
+[project.urls]
+Documentation = "https://whisper-smith.readthedocs.io/"
+Homepage = "https://github.com/yeiichi/whisper-smith"
+Repository = "https://github.com/yeiichi/whisper-smith"
+Issues = "https://github.com/yeiichi/whisper-smith/issues"
+
 [project.optional-dependencies]
+dev = [
+    "pytest>=9.0.3",
+]
 diarize = [
     "huggingface-hub<1",
     "numpy<2",

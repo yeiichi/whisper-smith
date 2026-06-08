@@ -3801,11 +3801,13 @@ source = { editable = "." }
 dependencies = [
     { name = "imageio-ffmpeg" },
     { name = "openai" },
-    { name = "pytest" },
     { name = "python-dotenv" },
 ]
 
 [package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+]
 diarize = [
     { name = "huggingface-hub" },
     { name = "numpy" },
@@ -3823,12 +3825,12 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'diarize'", specifier = "<2" },
     { name = "openai" },
     { name = "pyannote-audio", marker = "extra == 'diarize'" },
-    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "python-dotenv" },
     { name = "torch", marker = "extra == 'diarize'", specifier = "<2.9" },
     { name = "torchaudio", marker = "extra == 'diarize'", specifier = "<2.9" },
 ]
-provides-extras = ["diarize"]
+provides-extras = ["dev", "diarize"]
 
 [[package]]
 name = "yarl"

@@ -1,5 +1,10 @@
 # whisper-smith
 
+[![PyPI version](https://img.shields.io/pypi/v/whisper-smith)](https://pypi.org/project/whisper-smith/)
+[![Python versions](https://img.shields.io/pypi/pyversions/whisper-smith)](https://pypi.org/project/whisper-smith/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yeiichi/whisper-smith/blob/main/LICENSE)
+[![Docs](https://readthedocs.org/projects/whisper-smith/badge/?version=latest)](https://whisper-smith.readthedocs.io/)
+
 `whisper-smith` is a small Python CLI/app helper for transcribing audio files with OpenAI speech-to-text models.
 
 ## Features
