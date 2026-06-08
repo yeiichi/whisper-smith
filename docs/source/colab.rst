@@ -25,9 +25,11 @@ Open in Colab
 
 Click the badge to open the notebook directly in Google Colab — no download needed:
 
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb
-   :alt: Open in Colab
+.. raw:: html
+
+   <a href="https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb">
+     <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"/>
+   </a>
 
 The notebook is also available in the repository at:
 

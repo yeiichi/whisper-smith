@@ -12,9 +12,11 @@ The main workflow is:
 
 No local setup? Run the full pipeline on a free GPU in Google Colab:
 
-.. image:: https://colab.research.google.com/assets/colab-badge.svg
-   :target: https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb
-   :alt: Open in Colab
+.. raw:: html
+
+   <a href="https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb">
+     <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"/>
+   </a>
 
 .. toctree::
    :maxdepth: 2
