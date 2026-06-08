@@ -39,6 +39,7 @@ def _load_pyannote_pipeline_class() -> Any:
 def _allow_trusted_pyannote_checkpoint_globals() -> None:
     try:
         import torch
+        from pyannote.audio.core.task import Specifications
         from torch.torch_version import TorchVersion
     except ImportError:
         return
@@ -47,7 +48,7 @@ def _allow_trusted_pyannote_checkpoint_globals() -> None:
     if add_safe_globals is None:
         return
 
-    add_safe_globals([TorchVersion])
+    add_safe_globals([TorchVersion, Specifications])
 
 
 def _resolve_ffmpeg_executable() -> str:

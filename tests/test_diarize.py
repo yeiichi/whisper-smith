@@ -1,4 +1,6 @@
 import builtins
+import sys
+import types
 from types import SimpleNamespace
 
 import pytest
@@ -93,13 +95,20 @@ def test_load_pyannote_pipeline_reports_incompatible_torchaudio(
         _load_pyannote_pipeline_class()
 
 
-def test_allow_trusted_pyannote_checkpoint_globals_registers_torch_version(
+def test_allow_trusted_pyannote_checkpoint_globals_registers_checkpoint_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = []
 
     import torch
     from torch.torch_version import TorchVersion
+
+    class FakeSpecifications:
+        pass
+
+    fake_task_module = types.ModuleType("pyannote.audio.core.task")
+    fake_task_module.Specifications = FakeSpecifications
+    monkeypatch.setitem(sys.modules, "pyannote.audio.core.task", fake_task_module)
 
     monkeypatch.setattr(
         torch.serialization,
@@ -110,7 +119,7 @@ def test_allow_trusted_pyannote_checkpoint_globals_registers_torch_version(
 
     _allow_trusted_pyannote_checkpoint_globals()
 
-    assert calls == [[TorchVersion]]
+    assert calls == [[TorchVersion, FakeSpecifications]]
 
 
 def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:
