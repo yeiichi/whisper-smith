@@ -77,7 +77,7 @@ This is the direct Colab equivalent of the local CLI command:
 
 In the notebook, the uploaded filename is substituted at runtime:
 
-.. code-block:: python
+.. code-block:: none
 
    !whisper-smith "{audio_path}" --align --output "{output_path}"
 
