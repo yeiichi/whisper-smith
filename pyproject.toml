@@ -1,0 +1,22 @@
+[project]
+name = "whisper-smith"
+version = "0.1.0"
+description = "A small Python transcription helper using OpenAI speech-to-text APIs."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "imageio-ffmpeg",
+    "openai",
+    "pytest>=9.0.3",
+    "python-dotenv",
+]
+
+[project.scripts]
+whisper-smith = "whisper_smith.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
