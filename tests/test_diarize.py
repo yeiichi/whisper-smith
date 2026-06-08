@@ -5,6 +5,7 @@ import pytest
 
 from whisper_smith.diarize import (
     DEFAULT_DIARIZATION_MODEL,
+    _allow_trusted_pyannote_checkpoint_globals,
     _load_pyannote_pipeline_class,
     diarize_audio,
     from_pyannote_output,
@@ -90,6 +91,26 @@ def test_load_pyannote_pipeline_reports_incompatible_torchaudio(
 
     with pytest.raises(RuntimeError, match="dependency versions are incompatible"):
         _load_pyannote_pipeline_class()
+
+
+def test_allow_trusted_pyannote_checkpoint_globals_registers_torch_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+
+    import torch
+    from torch.torch_version import TorchVersion
+
+    monkeypatch.setattr(
+        torch.serialization,
+        "add_safe_globals",
+        lambda globals_to_add: calls.append(globals_to_add),
+        raising=False,
+    )
+
+    _allow_trusted_pyannote_checkpoint_globals()
+
+    assert calls == [[TorchVersion]]
 
 
 def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:

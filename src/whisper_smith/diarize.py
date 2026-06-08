@@ -36,6 +36,20 @@ def _load_pyannote_pipeline_class() -> Any:
     return Pipeline
 
 
+def _allow_trusted_pyannote_checkpoint_globals() -> None:
+    try:
+        import torch
+        from torch.torch_version import TorchVersion
+    except ImportError:
+        return
+
+    add_safe_globals = getattr(torch.serialization, "add_safe_globals", None)
+    if add_safe_globals is None:
+        return
+
+    add_safe_globals([TorchVersion])
+
+
 def _resolve_ffmpeg_executable() -> str:
     ffmpeg_path = shutil.which("ffmpeg")
     if ffmpeg_path:
@@ -129,6 +143,7 @@ def diarize_audio(
             )
 
         Pipeline = _load_pyannote_pipeline_class()
+        _allow_trusted_pyannote_checkpoint_globals()
         try:
             diarization_pipeline = Pipeline.from_pretrained(model, token=token)
         except TypeError as error:
