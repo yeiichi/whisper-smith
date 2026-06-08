@@ -106,7 +106,19 @@ def test_allow_trusted_pyannote_checkpoint_globals_registers_checkpoint_metadata
     class FakeSpecifications:
         pass
 
+    class FakeProblem:
+        pass
+
+    class FakeResolution:
+        pass
+
+    class FakeScope:
+        pass
+
     fake_task_module = types.ModuleType("pyannote.audio.core.task")
+    fake_task_module.Problem = FakeProblem
+    fake_task_module.Resolution = FakeResolution
+    fake_task_module.Scope = FakeScope
     fake_task_module.Specifications = FakeSpecifications
     monkeypatch.setitem(sys.modules, "pyannote.audio.core.task", fake_task_module)
 
@@ -119,7 +131,9 @@ def test_allow_trusted_pyannote_checkpoint_globals_registers_checkpoint_metadata
 
     _allow_trusted_pyannote_checkpoint_globals()
 
-    assert calls == [[TorchVersion, FakeSpecifications]]
+    assert calls == [
+        [TorchVersion, FakeSpecifications, FakeProblem, FakeResolution, FakeScope]
+    ]
 
 
 def test_diarize_audio_passes_speaker_options_to_pipeline(tmp_path) -> None:
