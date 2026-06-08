@@ -15,6 +15,16 @@
 - Automatically infer output format from output file extension
 - Load environment variables from `.env`
 
+## Run on Google Colab (free GPU)
+
+No local setup needed. Open the notebook directly in Colab and run the full
+speaker-aligned transcript pipeline on a free T4 GPU:
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb)
+
+The notebook covers: install → set API keys → upload audio → run pipeline → download result.
+Speaker diarization runs on the GPU, which is significantly faster than CPU.
+
 ## Requirements
 
 - Python `3.10+`
