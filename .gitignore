@@ -22,3 +22,7 @@ wheels/
 
 # Data directory
 data/
+!data/.gitkeep
+
+# macOS
+.DS_Store
