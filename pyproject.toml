@@ -11,6 +11,11 @@ dependencies = [
     "python-dotenv",
 ]
 
+[project.optional-dependencies]
+diarize = [
+    "pyannote.audio",
+]
+
 [project.scripts]
 whisper-smith = "whisper_smith.cli:main"
 

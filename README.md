@@ -15,6 +15,7 @@
 - Python `3.10+`
 - An OpenAI API key (`OPENAI_API_KEY`)
 - For large-file fallback: either system `ffmpeg` in `PATH`, or Python package `imageio-ffmpeg`
+- For optional speaker diarization: a Hugging Face token (`HUGGINGFACE_TOKEN`) and `pyannote.audio`
 
 ## Installation
 
@@ -30,18 +31,32 @@ uv sync
 pip install -e .
 ```
 
+### Optional speaker diarization dependencies
+
+```bash
+uv sync --extra diarize
+```
+
+or:
+
+```bash
+pip install -e ".[diarize]"
+```
+
 ## Configuration
 
 Set your API key in the environment or in a `.env` file:
 
 ```bash
 export OPENAI_API_KEY="your_api_key_here"
+export HUGGINGFACE_TOKEN="your_huggingface_token_here"
 ```
 
 Or create `.env` in project root:
 
 ```env
 OPENAI_API_KEY=your_api_key_here
+HUGGINGFACE_TOKEN=your_huggingface_token_here
 ```
 
 ## CLI Usage Guide
@@ -103,6 +118,21 @@ print(result.text)
 srt = export_transcript(result, "srt")
 Path("data/sample.srt").write_text(srt, encoding="utf-8")
 ```
+
+### Speaker diarization
+
+```python
+from pathlib import Path
+from whisper_smith.diarize import diarize_audio
+
+result = diarize_audio(Path("data/sample.m4a"))
+
+for segment in result.segments:
+    print(segment.start, segment.end, segment.speaker)
+```
+
+`diarize_audio` uses `HUGGINGFACE_TOKEN` from the environment, or accepts
+`hf_token="..."` explicitly.
 
 ## Notes
 

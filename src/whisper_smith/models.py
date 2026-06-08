@@ -17,3 +17,15 @@ class TranscriptResult:
     def __post_init__(self) -> None:
         if not self.text:
             self.text = "\n".join(segment.text for segment in self.segments)
+
+
+@dataclass(slots=True)
+class DiarizationSegment:
+    start: float
+    end: float
+    speaker: str
+
+
+@dataclass(slots=True)
+class DiarizationResult:
+    segments: list[DiarizationSegment]
