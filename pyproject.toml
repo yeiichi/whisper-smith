@@ -53,6 +53,8 @@ diarize = [
 ]
 colab = [
     "pyannote.audio>=4; python_version >= '3.12' and sys_platform == 'linux'",
+    "torch==2.11.*; python_version >= '3.12' and sys_platform == 'linux'",
+    "torchaudio==2.11.*; python_version >= '3.12' and sys_platform == 'linux'",
 ]
 
 [project.scripts]

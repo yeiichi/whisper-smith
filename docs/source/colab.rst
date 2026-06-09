@@ -45,30 +45,55 @@ Notebook walkthrough
 .. code-block:: python
 
    import os
+   import shutil
    import subprocess
    import sys
    from pathlib import Path
 
    repo_url = "git+https://github.com/yeiichi/whisper-smith.git"
-   venv_dir = Path("/content/whisper-smith-venv")
+   target_dir = Path("/content/whisper-smith-packages")
+   bin_dir = Path("/content/whisper-smith-bin")
+   shutil.rmtree(target_dir, ignore_errors=True)
+   shutil.rmtree(bin_dir, ignore_errors=True)
+   target_dir.mkdir(parents=True, exist_ok=True)
+   bin_dir.mkdir(parents=True, exist_ok=True)
 
-   if not (venv_dir / "bin/python").exists():
-       subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
-
-   venv_python = venv_dir / "bin/python"
-   subprocess.run(
-       [str(venv_python), "-m", "pip", "install", "-q", f"whisper-smith[colab] @ {repo_url}"],
-       check=True,
-   )
-
-   site_packages = subprocess.check_output(
-       [str(venv_python), "-c", "import site; print(site.getsitepackages()[0])"],
+   install_command = [
+       sys.executable,
+       "-m",
+       "pip",
+       "install",
+       "--target",
+       str(target_dir),
+       "--upgrade",
+       f"whisper-smith[colab] @ {repo_url}",
+   ]
+   completed = subprocess.run(
+       install_command,
+       capture_output=True,
        text=True,
-   ).strip()
-   if site_packages not in sys.path:
-       sys.path.insert(0, site_packages)
+   )
+   if completed.stdout:
+       print(completed.stdout)
+   if completed.stderr:
+       print(completed.stderr)
+   completed.check_returncode()
 
-   os.environ["PATH"] = f"{venv_dir / 'bin'}:{os.environ['PATH']}"
+   target_path = str(target_dir)
+   if target_path not in sys.path:
+       sys.path.insert(0, target_path)
+
+   launcher = bin_dir / "whisper-smith"
+   launcher.write_text(
+       "#!/usr/bin/env python3\n"
+       "import sys\n"
+       f"sys.path.insert(0, {target_path!r})\n"
+       "from whisper_smith.cli import main\n"
+       "raise SystemExit(main())\n",
+       encoding="utf-8",
+   )
+   launcher.chmod(0o755)
+   os.environ["PATH"] = f"{bin_dir}:{os.environ['PATH']}"
    subprocess.run(["whisper-smith", "--help"], check=True)
 
 **Step 2 — Load credentials from Colab Secrets**
