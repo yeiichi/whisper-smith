@@ -86,8 +86,14 @@ Notebook walkthrough
    launcher = bin_dir / "whisper-smith"
    launcher.write_text(
        "#!/usr/bin/env python3\n"
+       "import os\n"
        "import sys\n"
-       f"sys.path.insert(0, {target_path!r})\n"
+       "os.environ['MPLBACKEND'] = 'Agg'\n"
+       f"target_path = {target_path!r}\n"
+       "sys.path = [target_path] + [\n"
+       "    path for path in sys.path\n"
+       "    if 'site-packages' not in path and 'dist-packages' not in path\n"
+       "]\n"
        "from whisper_smith.cli import main\n"
        "raise SystemExit(main())\n",
        encoding="utf-8",
