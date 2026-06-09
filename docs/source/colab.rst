@@ -44,7 +44,32 @@ Notebook walkthrough
 
 .. code-block:: python
 
-   %pip install -q "whisper-smith[colab] @ git+https://github.com/yeiichi/whisper-smith.git"
+   import os
+   import subprocess
+   import sys
+   from pathlib import Path
+
+   repo_url = "git+https://github.com/yeiichi/whisper-smith.git"
+   venv_dir = Path("/content/whisper-smith-venv")
+
+   if not (venv_dir / "bin/python").exists():
+       subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+
+   venv_python = venv_dir / "bin/python"
+   subprocess.run(
+       [str(venv_python), "-m", "pip", "install", "-q", f"whisper-smith[colab] @ {repo_url}"],
+       check=True,
+   )
+
+   site_packages = subprocess.check_output(
+       [str(venv_python), "-c", "import site; print(site.getsitepackages()[0])"],
+       text=True,
+   ).strip()
+   if site_packages not in sys.path:
+       sys.path.insert(0, site_packages)
+
+   os.environ["PATH"] = f"{venv_dir / 'bin'}:{os.environ['PATH']}"
+   subprocess.run(["whisper-smith", "--help"], check=True)
 
 **Step 2 — Load credentials from Colab Secrets**
 
