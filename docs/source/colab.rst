@@ -42,6 +42,11 @@ Notebook walkthrough
 
 **Step 1 — Install whisper-smith**
 
+The notebook installs ``whisper-smith[colab]`` into an isolated target
+directory under ``/content`` and creates a small CLI launcher. This avoids
+rewriting Colab's preinstalled packages while still making ``whisper-smith``
+available to shell commands in later cells.
+
 .. code-block:: python
 
    import os

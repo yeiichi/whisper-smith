@@ -23,7 +23,9 @@ speaker-aligned transcript pipeline on a free T4 GPU:
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yeiichi/whisper-smith/blob/main/notebooks/colab_aligned_transcript.ipynb)
 
 The notebook covers: install → set API keys → upload audio → run pipeline → download result.
-Speaker diarization runs on the GPU, which is significantly faster than CPU.
+Use a GPU runtime for the best diarization performance. The notebook also
+includes an advanced GPU pipeline for explicitly moving the pyannote model to
+CUDA.
 
 ## Requirements
 
