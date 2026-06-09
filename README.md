@@ -185,7 +185,7 @@ for segment in result.segments:
 
 The default local model is `pyannote/speaker-diarization-3.1`, which is compatible
 with the Intel macOS dependency set. You may pass a different model explicitly
-from Python when running on a newer platform.
+from Python or with `--diarization-model` when running on a newer platform.
 
 ## Notes
 

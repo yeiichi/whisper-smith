@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dotenv import load_dotenv
 
 from whisper_smith.align import assign_speakers
-from whisper_smith.diarize import diarize_audio
+from whisper_smith.diarize import DEFAULT_DIARIZATION_MODEL, diarize_audio
 from whisper_smith.exporters import (
     export_diarization,
     export_diarization_json,
@@ -93,6 +93,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Do not write intermediate JSON files when using --align.",
     )
     parser.add_argument(
+        "--diarization-model",
+        help=(
+            "Hugging Face pyannote pipeline to use for --diarize or --align. "
+            f"Defaults to {DEFAULT_DIARIZATION_MODEL}."
+        ),
+    )
+    parser.add_argument(
         "--num-speakers",
         type=int,
         help="Exact number of speakers to use for diarization.",
@@ -177,14 +184,19 @@ def resolve_alignment_artifact_paths(
 
 
 def validate_mode_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> None:
-    speaker_options = (args.num_speakers, args.min_speakers, args.max_speakers)
+    diarization_options = (
+        args.diarization_model,
+        args.num_speakers,
+        args.min_speakers,
+        args.max_speakers,
+    )
     if args.diarize and args.align:
         parser.error("--diarize cannot be combined with --align.")
 
     if not (args.diarize or args.align) and any(
-        option is not None for option in speaker_options
+        option is not None for option in diarization_options
     ):
-        parser.error("Speaker-count options require --diarize or --align.")
+        parser.error("Diarization options require --diarize or --align.")
 
     if args.artifacts_dir is not None and not args.align:
         parser.error("--artifacts-dir requires --align.")
@@ -216,6 +228,7 @@ def validate_mode_args(args: argparse.Namespace, parser: argparse.ArgumentParser
 def run_diarization(args: argparse.Namespace, output_format: str) -> str:
     diarization = diarize_audio(
         args.audio_path,
+        model=args.diarization_model or DEFAULT_DIARIZATION_MODEL,
         num_speakers=args.num_speakers,
         min_speakers=args.min_speakers,
         max_speakers=args.max_speakers,
@@ -236,6 +249,7 @@ def run_alignment(args: argparse.Namespace) -> tuple[str, str, str]:
     transcript = transcribe_audio(args.audio_path)
     diarization = diarize_audio(
         args.audio_path,
+        model=args.diarization_model or DEFAULT_DIARIZATION_MODEL,
         num_speakers=args.num_speakers,
         min_speakers=args.min_speakers,
         max_speakers=args.max_speakers,

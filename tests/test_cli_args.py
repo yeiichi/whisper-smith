@@ -143,7 +143,7 @@ def test_cli_diarize_rejects_conflicting_speaker_options(
     assert "--num-speakers cannot be combined" in captured.err
 
 
-def test_cli_speaker_options_require_diarize_or_align(
+def test_cli_diarization_options_require_diarize_or_align(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -155,7 +155,20 @@ def test_cli_speaker_options_require_diarize_or_align(
 
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
-    assert "Speaker-count options require --diarize or --align" in captured.err
+    assert "Diarization options require --diarize or --align" in captured.err
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                str(audio_file),
+                "--diarization-model",
+                "pyannote/speaker-diarization-community-1",
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "Diarization options require --diarize or --align" in captured.err
 
 
 def test_cli_diarize_passes_speaker_options(
@@ -178,6 +191,8 @@ def test_cli_diarize_passes_speaker_options(
             "--diarize",
             "--format",
             "json",
+            "--diarization-model",
+            "pyannote/speaker-diarization-community-1",
             "--min-speakers",
             "1",
             "--max-speakers",
@@ -189,6 +204,7 @@ def test_cli_diarize_passes_speaker_options(
         (
             (audio_file,),
             {
+                "model": "pyannote/speaker-diarization-community-1",
                 "num_speakers": None,
                 "min_speakers": 1,
                 "max_speakers": 3,
@@ -237,6 +253,8 @@ def test_cli_align_passes_speaker_options(
             "--align",
             "--format",
             "json",
+            "--diarization-model",
+            "pyannote/speaker-diarization-community-1",
             "--min-speakers",
             "1",
             "--max-speakers",
@@ -248,6 +266,7 @@ def test_cli_align_passes_speaker_options(
         (
             (audio_file,),
             {
+                "model": "pyannote/speaker-diarization-community-1",
                 "num_speakers": None,
                 "min_speakers": 1,
                 "max_speakers": 3,

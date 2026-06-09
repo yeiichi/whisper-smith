@@ -45,11 +45,14 @@ dev = [
     "pytest>=9.0.3",
 ]
 diarize = [
-    "huggingface-hub<1",
-    "numpy<2",
-    "pyannote.audio",
-    "torch<2.9",
-    "torchaudio<2.9",
+    "huggingface-hub<1; python_version < '3.12'",
+    "numpy<2; python_version < '3.12'",
+    "pyannote.audio<4; python_version < '3.12'",
+    "torch<2.9; python_version < '3.12'",
+    "torchaudio<2.9; python_version < '3.12'",
+]
+colab = [
+    "pyannote.audio>=4; python_version >= '3.12' and sys_platform == 'linux'",
 ]
 
 [project.scripts]
@@ -64,6 +67,7 @@ version_toml = ["pyproject.toml:project.version"]
 branch = "main"
 upload_to_pypi = true
 upload_to_release = true
+allow_zero_version = true
 major_on_zero = false
 
 [tool.semantic_release.commit_parser_options]

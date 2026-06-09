@@ -16,9 +16,9 @@ In the Colab sidebar open **Secrets** (key icon) and add:
 - ``OPENAI_API_KEY`` — your OpenAI API key
 - ``HUGGINGFACE_TOKEN`` — your Hugging Face token
 
-You must also accept the `pyannote/speaker-diarization-3.1
-<https://huggingface.co/pyannote/speaker-diarization-3.1>`_ model terms
-on Hugging Face before the pipeline can be downloaded.
+You must also accept the `pyannote/speaker-diarization-community-1
+<https://huggingface.co/pyannote/speaker-diarization-community-1>`_ model
+terms on Hugging Face before the pipeline can be downloaded.
 
 Open in Colab
 -------------
@@ -44,7 +44,7 @@ Notebook walkthrough
 
 .. code-block:: python
 
-   %pip install -q "whisper-smith[diarize]"
+   %pip install -q --upgrade --upgrade-strategy eager "whisper-smith[colab] @ git+https://github.com/yeiichi/whisper-smith.git"
 
 **Step 2 — Load credentials from Colab Secrets**
 
@@ -73,13 +73,13 @@ This is the direct Colab equivalent of the local CLI command:
 
 .. code-block:: bash
 
-   whisper-smith audio.m4a --align --output audio.aligned.json
+   whisper-smith audio.m4a --align --diarization-model pyannote/speaker-diarization-community-1 --output audio.aligned.json
 
 In the notebook, the uploaded filename is substituted at runtime:
 
 .. code-block:: none
 
-   !whisper-smith "{audio_path}" --align --output "{output_path}"
+   !whisper-smith "{audio_path}" --align --diarization-model pyannote/speaker-diarization-community-1 --output "{output_path}"
 
 **Step 5 — Preview results**
 
@@ -118,7 +118,7 @@ model if you run diarization multiple times in the same session.
    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
    diarize_pipeline = Pipeline.from_pretrained(
-       "pyannote/speaker-diarization-3.1",
+       "pyannote/speaker-diarization-community-1",
        token=os.environ["HUGGINGFACE_TOKEN"],
    )
    diarize_pipeline.to(device)
