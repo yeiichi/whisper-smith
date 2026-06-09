@@ -44,7 +44,7 @@ Notebook walkthrough
 
 .. code-block:: python
 
-   %pip install -q --upgrade --upgrade-strategy eager "whisper-smith[colab] @ git+https://github.com/yeiichi/whisper-smith.git"
+   %pip install -q "whisper-smith[colab] @ git+https://github.com/yeiichi/whisper-smith.git"
 
 **Step 2 — Load credentials from Colab Secrets**
 
