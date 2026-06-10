@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v0.2.1 (2026-06-10)
+
+### Bug Fixes
+
+- Align Colab GPU torchvision dependency
+  ([`2a2fd1b`](https://github.com/yeiichi/whisper-smith/commit/2a2fd1b41b499aec56b43ae0e5781c5a56ffde59))
+
+
 ## v0.2.0 (2026-06-09)
 
 ### Bug Fixes
