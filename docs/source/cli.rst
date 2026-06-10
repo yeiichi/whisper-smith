@@ -66,3 +66,22 @@ Suppress intermediate files:
 .. code-block:: bash
 
    whisper-smith data/sample.m4a --align --output data/sample.aligned.json --no-artifacts
+
+Convert JSON to CSV
+-------------------
+
+Turn transcript or aligned JSON into a spreadsheet-friendly CSV:
+
+.. code-block:: bash
+
+   whisper-smith json-to-csv data/sample.aligned.json --output data/sample.csv
+
+The CSV columns are ``start``, ``end``, ``start_dttm``, ``speaker``, and
+``text``.
+
+Use ``--initial-datetime`` to make ``start_dttm`` relative to a real recording
+start time:
+
+.. code-block:: bash
+
+   whisper-smith json-to-csv data/sample.aligned.json --output data/sample.csv --initial-datetime 2026-06-10T09:00:00

@@ -13,6 +13,7 @@ from whisper_smith.exporters import (
     export_json,
     export_transcript,
 )
+from whisper_smith.json_to_csv import main as json_to_csv_main
 from whisper_smith.transcribe import transcribe_audio
 
 
@@ -24,6 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="whisper-smith",
         description="Transcribe audio files with OpenAI transcription models.",
+        epilog="Subcommands: json-to-csv",
     )
     parser.add_argument(
         "audio_path",
@@ -265,13 +267,18 @@ def run_alignment(args: argparse.Namespace) -> tuple[str, str, str]:
 def main(argv: Sequence[str] | None = None) -> None:
     load_dotenv()
 
+    argv_items = list(sys.argv[1:] if argv is None else argv)
+    if argv_items[:1] == ["json-to-csv"]:
+        json_to_csv_main(argv_items[1:])
+        return
+
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv_items)
 
     if not args.audio_path.is_file():
         parser.error(f"Audio file not found: {args.audio_path}")
 
-    raw_output_arg = extract_raw_output_arg(argv)
+    raw_output_arg = extract_raw_output_arg(argv_items)
     output_format = infer_output_format(args.output, args.format)
     validate_mode_args(args, parser)
     if args.diarize or args.align:

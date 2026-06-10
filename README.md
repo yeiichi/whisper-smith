@@ -156,6 +156,22 @@ To put the intermediate artifacts in a separate directory:
 whisper-smith data/sample.m4a --align --output data/sample.aligned.json --artifacts-dir data/artifacts
 ```
 
+### 8) Convert transcript JSON to CSV
+
+Turn transcript or aligned JSON into a spreadsheet-friendly CSV:
+
+```bash
+whisper-smith json-to-csv data/sample.aligned.json --output data/sample.csv
+```
+
+The CSV columns are `start`, `end`, `start_dttm`, `speaker`, and `text`.
+Use `--initial-datetime` to make `start_dttm` relative to a real recording
+start time:
+
+```bash
+whisper-smith json-to-csv data/sample.aligned.json --output data/sample.csv --initial-datetime 2026-06-10T09:00:00
+```
+
 ## Python Usage
 
 ```python
