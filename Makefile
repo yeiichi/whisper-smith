@@ -22,6 +22,5 @@ clean: ## Remove cache files and generated local artifacts
 	@find . -type d -name "__pycache__" -not -path "*/.venv/*" -exec rm -rf {} +
 	@find . -type d -name ".pytest_cache" -not -path "*/.venv/*" -exec rm -rf {} +
 	@find . -type d -name ".ruff_cache" -not -path "*/.venv/*" -exec rm -rf {} +
-	@rm -rf .coverage htmlcov/
+	@rm -rf .coverage htmlcov/ dist/ build/ *.egg-info
 	@echo "Cleanup complete."
-
