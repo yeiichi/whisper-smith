@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.0 (2026-06-10)
+
+### Chores
+
+- Update `clean` in the Makefile`
+  ([`3caec47`](https://github.com/yeiichi/whisper-smith/commit/3caec4711c69500c17a897e25e533a810b1748d7))
+
+### Features
+
+- Add json-to-csv subcommand to convert transcript JSON to CSV
+  ([`55f485e`](https://github.com/yeiichi/whisper-smith/commit/55f485efe0843ab7ba6153b9db186a7c92229855))
+
+
 ## v0.2.1 (2026-06-10)
 
 ### Bug Fixes
