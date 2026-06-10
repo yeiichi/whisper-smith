@@ -72,6 +72,7 @@ available to shell commands in later cells.
        str(target_dir),
        "--upgrade",
        f"whisper-smith[colab] @ {repo_url}",
+       "torchvision==0.26.*",
    ]
    completed = subprocess.run(
        install_command,
